@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="call-to-perform-upsert" doc:id="797721c7-f192-4110-b453-71141b6e7976" >
+		<http:listener doc:name="recieve the request from prc api" doc:id="4450eb6a-54e6-47b4-872e-9c0bfcd21595" config-ref="HTTP_Listener_config" path="/sf"/>
+		<logger level="INFO" doc:name="Log the initial request" doc:id="37a221c1-9d3e-479f-adff-7025cbf3a2ca" message="#[payload]"/>
+		<ee:transform doc:name="Transform the data to send to sf" doc:id="a01f02a1-f880-42f9-bc1d-0f32ffaeea60" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+output application/java  
+---
+payload map ((item, index) -> {
+  'empid__c': item.empid,
+  'Name': item.emp_name,
+  'empdesignation__c': item.empdesignation,
+  'empskill__c': item.empskill,
+  'datetime__c': item.lastdatetime as DateTime 
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:upsert doc:name="Upsert the data retrieved from OIM" doc:id="3d69f0b1-a33e-41c2-b093-213c6ece4007" config-ref="Salesforce_Config" objectType="employee__c" externalIdFieldName="empid__c"/>
+		<ee:transform doc:name="Transform the Message to json" doc:id="387fb695-c031-45f5-996a-ffa313304b34" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log success message" doc:id="e61534c2-70b5-41da-9e1f-869f2e3b7fd4" message="Employee Data is updated into Salesforce Successfully!"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b84c866a-9756-48ce-88ed-e19cf500cdab" type="SALESFORCE:CONNECTIVITY">
+				<logger level="INFO" doc:name="Logger" doc:id="c53e36da-a925-4456-80c1-55f11cc37b5c" message="error while connecting to salesforce"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

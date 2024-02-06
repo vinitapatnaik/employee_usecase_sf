@@ -1,0 +1,43 @@
+#%RAML 1.0
+title: Upsert Employee API
+version: v1
+
+types:
+  Employee:
+    properties:
+      empname: string
+      empid: string
+      empdesignation: string
+      empskill: string
+      datetime: datetime
+
+/upsert:
+  post:
+    description: Upsert employee data based on datetime field
+    body:
+      application/json:
+        example: |
+          {
+            "empname": "John Doe",
+            "empid": "E123",
+            "empdesignation": "Developer",
+            "empskill": "Java",
+            "datetime": "2023-05-01T12:00:00Z"
+          }
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "message": "Record upserted successfully",
+                "status": "success"
+              }
+      400:
+        body:
+          application/json:
+            example: |
+              {
+                "message": "Bad Request",
+                "status": "error"
+              }
